@@ -1,5 +1,6 @@
-// Electronic Life Program from Ch. 7
-
+/*
+ * Electronic Life Program from Ch. 7
+ */
 
 var plan = ["############################",
             "#      #    #      o      ##",
@@ -14,7 +15,9 @@ var plan = ["############################",
             "#    #                     #",
             "############################"];
 
-// Vector object
+/*
+ * #### Vector Object ####
+ */
 function Vector(x, y) {
   this.x = x;
   this.y = y;
@@ -29,7 +32,9 @@ Vector.prototype.plus = function(other) {
 // console.log(grid[2 + (1 * 3));
 
 
-// Grid object
+/*
+ * #### Grid Object ####
+ */
 function Grid(width, height) {
   this.space = new Array(width * height);
   this.width = width;
@@ -47,9 +52,11 @@ Grid.prototype.set = function(vector, value) {
 };
 Grid.prototype.forEach = function(f, context) {
   for (var y = 0; y < this.height; y++) {
-    var value = this.space[x + y * this.width]; {
-      if (value != null)
-        f.call(context, value, new Vector(x, y));
+    for (var x = 0; x < this.width; x++) {
+      var value = this.space[x + y * this.width]; {
+        if (value != null)
+          f.call(context, value, new Vector(x, y));
+      }
     }
   }
 };
@@ -75,7 +82,9 @@ console.log(grid.get(new Vector(1, 1)));
 */
 
 
-// Bouncing critter
+/*
+ * #### Bouncing Critter Object ####
+ */
 function randomElement(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
@@ -92,7 +101,9 @@ BouncingCritter.prototype.act = function(view) {
 };
 
 
-// World object
+/*
+ *  #### World Object ####
+ */
 function elementFromChar(legend, ch) {
   if (ch == " ") {
     return null;
@@ -100,6 +111,15 @@ function elementFromChar(legend, ch) {
   var element = new legend[ch]();
   element.originChar = ch;
   return element;
+}
+
+function charFromElement(element) {
+  if (element == null) {
+    return " ";
+  }
+  else {
+    return element.originChar;
+  }
 }
 
 function World(map, legend) {
@@ -113,16 +133,6 @@ function World(map, legend) {
         elementFromChar(legend, line[x]));
   });
 }
-
-function charFromElement(element) {
-  if (element == null) {
-    return " ";
-  }
-  else {
-    return element.originChar;
-  }
-}
-
 World.prototype.toString = function() {
   var output = "";
   for (var y = 0; y < this.grid.height; y++) {
@@ -134,12 +144,88 @@ World.prototype.toString = function() {
   }
   return output;
 };
+World.prototype.turn = function() {
+  var acted = [];
+  this.grid.forEach(function(critter, vector) {
+    if (critter.act && acted.indexOf(critter) == -1) {
+      acted.push(critter);
+      this.letAct(critter, vector);
+    }
+  }, this);
+};
+World.prototype.letAct = function(critter, vector) {
+  var action = critter.act(new View(this, vector));
+  if (action && action.type == "move") {
+    var dest = this.checkDestination(action, vector);
+    if (dest && this.grid.get(dest) == null) {
+      this.grid.set(vector, null);
+      this.grid.set(dest, critter);
+    }
+  }
+};
+World.prototype.checkDestination = function(action, vector) {
+  if (directions.hasOwnProperty(action.direction)) {
+    var dest = vector.plus(directions[action.direction]);
+    if (this.grid.isInside(dest))
+      return dest;
+  }
+};
 
 
-// Wall object. Only used for taking up space, no act method.
+/*
+ * #### View Object ####
+ */
+function View(world, vector) {
+  this.world = world;
+  this.vector = vector;
+}
+View.prototype.look = function(dir) {
+  var target = this.vector.plus(directions[dir]);
+  if (this.world.grid.isInside(target))
+    return charFromElement(this.world.grid.get(target));
+  else
+    return "#";
+};
+View.prototype.findAll = function(ch) {
+  var found = [];
+  for (var dir in directions)
+    if (this.look(dir) == ch)
+      found.push(dir);
+  return found;
+};
+View.prototype.find = function(ch) {
+  var found = this.findAll(ch);
+  if (found.length == 0) return null;
+  return randomElement(found);
+}
+
+/*
+ * #### Wall Object ####
+ *
+ * Only used for taking up space, no act method.
+ */
 function Wall() {}
 
+
+// world test
 var world = new World(plan, {"#": Wall,
                              "o": BouncingCritter});
-// console.log(plan);
-console.log(world.toString());
+/*
+ * #### Animate World in Console ####
+ */
+var counter = 0;
+var advanceState = setInterval( function() {
+  world.turn();
+  process.stdout.write('\033c');
+  process.stdout.write(world.toString());
+  counter++;
+  if (counter >= 10) {
+    clearInterval(advanceState);
+  }
+}, 1000);
+
+/*
+for (var i = 0; i < 5; i++) {
+  console.log(world.toString());
+}
+*/

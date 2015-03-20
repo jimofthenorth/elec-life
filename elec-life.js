@@ -162,20 +162,50 @@ PlantEater.prototype.act = function(context) {
  * #### SmartPlantEater Object ####
  */
 function SmartPlantEater() {
-  this.energy = 20;
+  this.energy = 30;
   this.direction = randomElement(directionNames);
 }
 SmartPlantEater.prototype.act = function(context) {
   if (context.look(this.direction) != " ")
     this.direction = context.find(" ") || "s";
 
-  if (this.energy > 80 && this.direction)
+  if (this.energy > 60 && this.direction)
     return {type: "reproduce", direction: this.direction};
   var plant = context.find("*");
   if (plant) {
     if (context.findAll("*").length > 1)
       return {type: "eat", direction: plant};
   }
+  if (this.direction)
+    return {type: "move", direction: this.direction};
+};
+
+/*
+ * #### Tiger Object ####
+ */
+function Tiger() {
+  this.energy = 80;
+  this.direction = randomElement(directionNames);
+  this.hunger = 0;
+}
+Tiger.prototype.act = function(context) {
+  if (context.look(this.direction) != " ")
+    this.direction = context.find(" ") || "s";
+
+  if (this.energy > 160 && this.direction)
+    return {type: "reproduce", direction: this.direction};
+  var prey = context.find("O");
+  if (prey && this.hunger > 5) {
+    this.hunger -= 3;
+    return {type: "eat", direction: prey};
+  }
+  // Canibalism if only tigers around
+  var tigerPrey = context.find("@");
+  if (tigerPrey && this.hunger > 20) {
+    this.hunger -= 3;
+    return {type: "eat", direction: tigerPrey};
+  }
+  this.hunger++;
   if (this.direction)
     return {type: "move", direction: this.direction};
 };
@@ -281,7 +311,7 @@ LifeLikeWorld.prototype.letAct = function(critter, vector) {
 var actionTypes = Object.create(null);
 
 actionTypes.grow = function(critter) {
-  critter.energy += 0.5;
+  critter.energy += 0.2;
   return true;
 };
 actionTypes.move = function(critter, vector, action) {
@@ -373,21 +403,28 @@ var followerWorld = new World(
 
 // LifeLikeWorld test
 var valley = new LifeLikeWorld(
-  ["############################",
-   "#####                 ######",
-   "##   ***                **##",
-   "#   *##**         **  O  *##",
-   "#    ***     O    ##**    *#",
-   "#       O         ##***    #",
-   "#                 ##**     #",
-   "#   O       #*             #",
-   "#*          #**       O    #",
-   "#***        ##**    O    **#",
-   "##****     ###***       *###",
-   "############################"],
-   {"#": Wall,
-    "O": SmartPlantEater,
-    "*": Plant}
+  ["####################################################",
+   "#                 ####         ****              ###",
+   "#   *  @  ##                 ########       OO    ##",
+   "#   *    ##        O O                 ****       *#",
+   "#       ##*                        ##########     *#",
+   "#      ##***  *         ****                     **#",
+   "#* **  #  *  ***      ###                        **#",
+   "#* **  #      *               #   *              **#",
+   "#     ##              #   O   #  ***          ######",
+   "#*            @       #       #   *        O  #    #",
+   "#*                    #                         ** #",
+   "###          ****          ***                  ** #",
+   "#       O                        @         O       #",
+   "#   *     ##  ##  ##  ##               ###      *  #",
+   "#   **         #              *       #####  O     #",
+   "##  **  O   O  #  #    ***  ***        ###      ** #",
+   "###               #   *****                    ****#",
+   "####################################################"],
+  {"#": Wall,
+   "@": Tiger,
+   "O": SmartPlantEater, // from previous exercise
+   "*": Plant}
 );
 
 /*

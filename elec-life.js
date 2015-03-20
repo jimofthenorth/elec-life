@@ -83,7 +83,7 @@ console.log(grid.get(new Vector(1, 1)));
 
 
 /*
- * #### Bouncing Critter Object ####
+ * #### randomElement function
  */
 function randomElement(array) {
   return array[Math.floor(Math.random() * array.length)];
@@ -91,18 +91,8 @@ function randomElement(array) {
 
 var directionNames = "n ne e se s sw w nw".split(" ");
 
-function BouncingCritter() {
-  this.direction = randomElement(directionNames);
-};
-BouncingCritter.prototype.act = function(view) {
-  if (view.look(this.direction) != " ")
-    this.direction = view.find(" ") || "s";
-  return {type: "move", direction: this.direction};
-};
-
-
 /*
- * #### Wall Follower Object ####
+ * #### WallFollower Object ####
  */
 function dirPlus(dir, n) {
   var index = directionNames.indexOf(dir);
@@ -140,6 +130,18 @@ Plant.prototype.act = function(context) {
 };
 
 /*
+ * #### BouncingCritter Object ####
+ */
+ function BouncingCritter() {
+   this.direction = randomElement(directionNames);
+ };
+ BouncingCritter.prototype.act = function(view) {
+   if (view.look(this.direction) != " ")
+     this.direction = view.find(" ") || "s";
+   return {type: "move", direction: this.direction};
+ };
+
+/*
  * #### PlantEater Object ####
  */
 function PlantEater() {
@@ -154,6 +156,28 @@ PlantEater.prototype.act = function(context) {
     return {type: "eat", direction: plant};
   if (space)
     return {type: "move", direction: space};
+};
+
+/*
+ * #### SmartPlantEater Object ####
+ */
+function SmartPlantEater() {
+  this.energy = 20;
+  this.direction = randomElement(directionNames);
+}
+SmartPlantEater.prototype.act = function(context) {
+  if (context.look(this.direction) != " ")
+    this.direction = context.find(" ") || "s";
+
+  if (this.energy > 80 && this.direction)
+    return {type: "reproduce", direction: this.direction};
+  var plant = context.find("*");
+  if (plant) {
+    if (context.findAll("*").length > 1)
+      return {type: "eat", direction: plant};
+  }
+  if (this.direction)
+    return {type: "move", direction: this.direction};
 };
 
 /*
@@ -362,7 +386,7 @@ var valley = new LifeLikeWorld(
    "##****     ###***       *###",
    "############################"],
    {"#": Wall,
-    "O": PlantEater,
+    "O": SmartPlantEater,
     "*": Plant}
 );
 
@@ -375,10 +399,10 @@ var advanceState = setInterval( function() {
   process.stdout.write('\033c');
   process.stdout.write(valley.toString());
   counter++;
-  if (counter >= 10) {
+  if (counter >= 1000) {
     clearInterval(advanceState);
   }
-}, 1000);
+}, 500);
 
 /*
 for (var i = 0; i < 5; i++) {
